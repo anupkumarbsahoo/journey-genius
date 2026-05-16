@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import { useRef, useEffect, useState } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { AttractionType, MapViewState } from "@/types";
 import { CATEGORY_ICONS } from "@/types";
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+// Free map style — no API key required (OpenFreeMap)
+const FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
 interface MapViewProps {
   viewState: MapViewState;
@@ -32,26 +33,25 @@ export function MapView({
   className = "",
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const map = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: FREE_MAP_STYLE,
       center: [viewState.longitude, viewState.latitude],
       zoom: viewState.zoom,
-      antialias: true,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
     map.current.addControl(
-      new mapboxgl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }),
+      new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }),
       "top-right"
     );
 
@@ -126,7 +126,7 @@ export function MapView({
       el.addEventListener("click", () => onAttractionClick?.(attraction));
       el.style.cursor = "pointer";
 
-      const marker = new mapboxgl.Marker(el)
+      const marker = new maplibregl.Marker(el)
         .setLngLat([attraction.longitude, attraction.latitude])
         .addTo(map.current!);
 
@@ -176,7 +176,7 @@ export function MapView({
     if (coords.length > 0) {
       const bounds = coords.reduce(
         (b, coord) => b.extend(coord),
-        new mapboxgl.LngLatBounds(coords[0], coords[0])
+        new maplibregl.LngLatBounds(coords[0], coords[0])
       );
       map.current.fitBounds(bounds, { padding: 60, duration: 1500 });
     }
@@ -189,7 +189,7 @@ export function MapView({
 
     if (!selectedAttraction) return;
 
-    const popup = new mapboxgl.Popup({
+    const popup = new maplibregl.Popup({
       offset: 25,
       closeButton: false,
       maxWidth: "280px",
