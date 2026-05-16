@@ -4,15 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXTAUTH_URL": "@nextauth-url",
-    "NEXT_PUBLIC_MAPBOX_TOKEN": "@mapbox-token",
-    "GROQ_API_KEY": "@groq-api-key",
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "OPENWEATHER_API_KEY": "@openweather-api-key"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
