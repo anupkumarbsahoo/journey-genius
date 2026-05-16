@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --yes)"
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --yes)",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(mkdir -p \"c:\\\\Users\\\\anupk\\\\OneDrive\\\\Desktop\\\\Project\\\\journey-genius\\\\app\\\\api\\\\auth\\\\[...nextauth]\" 2>&1)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\anupk\\OneDrive\\Desktop\\Project\\journey-genius\\app\\api\\auth"
     ]
   }
 }

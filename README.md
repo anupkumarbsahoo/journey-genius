@@ -1,4 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ✈️ WanderPilot AI — Smart Travel Planning
+
+An AI-powered travel planner built with Next.js 15, featuring real-time attraction discovery, smart route planning, and personalized itinerary generation using **Groq AI** and **Google Gemini** — all free!
+
+## 🚀 Features
+
+- 🗺️ **Attraction Discovery** — Find attractions using OpenStreetMap's free Overpass API
+- 💎 **Hidden Gems** — AI-powered off-the-beaten-path recommendations
+- 🛣️ **Smart Route Planner** — Optimized routes with fuel cost estimates
+- 📅 **AI Itinerary Generator** — Day-by-day plans powered by Groq + Gemini
+- 🤖 **AI Travel Assistant** — Llama 3.3 70B chat interface with voice input
+- 🌤️ **Weather Integration** — OpenWeatherMap real-time data
+- 📱 **PWA Support** — Installable on mobile
+
+## 🛠️ Tech Stack
+
+Next.js 15 · TypeScript · Tailwind CSS · Framer Motion · Mapbox GL · Groq AI · Google Gemini · OpenStreetMap · PostgreSQL · Prisma ORM · NextAuth.js · Vercel
+
+## 📦 Quick Start
+
+### Free API Keys Required
+
+| Service | Free Tier | Signup |
+|---------|-----------|--------|
+| Mapbox | 50k map loads/month | [mapbox.com](https://mapbox.com) |
+| Groq | Free (fast LLM) | [console.groq.com](https://console.groq.com) |
+| Google Gemini | Free tier | [aistudio.google.com](https://aistudio.google.com) |
+| OpenWeatherMap | 60 calls/min | [openweathermap.org](https://openweathermap.org) |
+
+### Installation
+
+```bash
+npm install
+cp .env.example .env.local
+# Add your API keys to .env.local
+npx prisma migrate dev --name init
+npm run dev
+```
 
 ## Getting Started
 
