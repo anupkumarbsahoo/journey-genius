@@ -92,7 +92,7 @@ export async function fetchAttractions(
     .filter(Boolean)
     .map((q) => q.replace(/\{\{bbox\}\}/g, bbox));
 
-  const query = `[out:json][timeout:25];
+  const query = `[out:json][timeout:12];
 (
   ${queryParts.join("\n")}
 );
@@ -103,7 +103,7 @@ out body center;`;
       method: "POST",
       body: query,
       headers: { "Content-Type": "text/plain" },
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) throw new Error(`Overpass API error: ${response.status}`);

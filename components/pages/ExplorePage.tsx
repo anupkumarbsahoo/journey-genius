@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -18,6 +18,7 @@ import { MapView } from "@/components/map/MapView";
 import { AttractionCard } from "@/components/cards/AttractionCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PlaceAutocomplete } from "@/components/ui/PlaceAutocomplete";
 import { Badge } from "@/components/ui/Badge";
 import { AttractionCardSkeleton } from "@/components/ui/Skeleton";
 import { WeatherWidget } from "@/components/shared/WeatherWidget";
@@ -51,8 +52,12 @@ export function ExplorePage() {
     minRating: 0,
   });
 
-  const { attractions, loading, fetchAttractions } = useAttractions();
+  const { attractions, loading, error, fetchAttractions } = useAttractions();
   const { getLocation, loading: geoLoading } = useGeolocation();
+
+  useEffect(() => {
+    if (error) toast.error("Could not load places — check your connection and try again.");
+  }, [error]);
 
   const handleSearch = useCallback(
     debounce(async (query: string) => {
@@ -127,14 +132,20 @@ export function ExplorePage() {
             >
               {/* Search */}
               <div className="p-4 border-b border-border/30">
-                <Input
+                <PlaceAutocomplete
                   placeholder="Search location..."
                   icon={<Search className="w-4 h-4" />}
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    handleSearch(e.target.value);
+                  onChange={(val) => {
+                    setSearchQuery(val);
+                    handleSearch(val);
                   }}
+                  onSelect={(place) => {
+                    setSearchQuery(place.fieldValue);
+                    setViewState({ latitude: place.lat, longitude: place.lng, zoom: 12 });
+                    fetchAttractions(place.lat, place.lng, filters);
+                  }}
+                  onSubmit={(val) => handleSearch(val)}
                   className="bg-white/5 border-border/30"
                 />
                 <div className="flex gap-2 mt-3">

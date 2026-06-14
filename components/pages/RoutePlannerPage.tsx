@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Route,
@@ -19,6 +19,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { MapView } from "@/components/map/MapView";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PlaceAutocomplete } from "@/components/ui/PlaceAutocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useRoute } from "@/hooks/useRoute";
@@ -51,8 +52,42 @@ export function RoutePlannerPage() {
     longitude: -98.5795,
     zoom: 4,
   });
-  const [routeAttractions, setRouteAttractions] = useState<AttractionType[]>([]);
+  const [allAttractions, setAllAttractions] = useState<AttractionType[]>([]);
+  const prevScenicRef = useRef(false);
   const { route, loading, fetchRoute, clearRoute } = useRoute();
+
+  // Fetch ALL attraction types once when route changes — filter client-side on toggle
+  useEffect(() => {
+    if (!route) { setAllAttractions([]); return; }
+    const coords = route.geometry.coordinates;
+    const midIdx = Math.floor(coords.length / 2);
+    const [midLon, midLat] = coords[midIdx] as [number, number];
+    fetch(`/api/attractions?lat=${midLat}&lon=${midLon}&radius=10&categories=tourism,restaurant,gas_station`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setAllAttractions(data?.attractions?.slice(0, 50) || []))
+      .catch(() => {});
+  }, [route]);
+
+  // Instant client-side filter when options toggle — no API call needed
+  const routeAttractions = useMemo(
+    () =>
+      allAttractions.filter((a) => {
+        if (a.category === "tourism" && !options.showAttractions) return false;
+        if (a.category === "restaurant" && !options.showRestaurants) return false;
+        if (a.category === "gas_station" && !options.showFuelStops) return false;
+        return true;
+      }),
+    [allAttractions, options.showAttractions, options.showRestaurants, options.showFuelStops]
+  );
+
+  // Auto-recalculate route when scenic option is toggled (if route already exists)
+  useEffect(() => {
+    if (prevScenicRef.current === options.scenic) return;
+    prevScenicRef.current = options.scenic;
+    if (!route || !from.trim() || !to.trim()) return;
+    fetchRoute(from, to, { scenic: options.scenic });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.scenic]);
 
   const handlePlanRoute = async () => {
     if (!from.trim() || !to.trim()) {
@@ -68,31 +103,19 @@ export function RoutePlannerPage() {
 
     toast.success("Route calculated successfully!");
 
-    // Fetch attractions along route if enabled
-    if (options.showAttractions || options.showRestaurants || options.showFuelStops) {
-      const coords = result.geometry.coordinates;
-      const midIdx = Math.floor(coords.length / 2);
-      const [midLon, midLat] = coords[midIdx] as [number, number];
-
-      const categories = [
-        ...(options.showAttractions ? ["tourism"] : []),
-        ...(options.showRestaurants ? ["restaurant"] : []),
-        ...(options.showFuelStops ? ["gas_station"] : []),
-      ];
-
-      if (categories.length > 0) {
-        try {
-          const res = await fetch(
-            `/api/attractions?lat=${midLat}&lon=${midLon}&radius=10&categories=${categories.join(",")}`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            setRouteAttractions(data.attractions?.slice(0, 20) || []);
-          }
-        } catch {
-          // silent
-        }
-      }
+    // Fly map to fit the route
+    const coords = result.geometry.coordinates as [number, number][];
+    if (coords.length > 0) {
+      const lons = coords.map((c) => c[0]);
+      const lats = coords.map((c) => c[1]);
+      const midLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+      const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+      const span = Math.max(
+        Math.max(...lons) - Math.min(...lons),
+        Math.max(...lats) - Math.min(...lats)
+      );
+      const zoom = Math.max(4, Math.min(10, Math.log2(120 / Math.max(span, 0.01))));
+      setViewState({ latitude: midLat, longitude: midLon, zoom });
     }
   };
 
@@ -123,29 +146,25 @@ export function RoutePlannerPage() {
 
             {/* From / To inputs */}
             <div className="space-y-3">
-              <div className="relative">
-                <Input
-                  placeholder="From: City, Address, or Place"
-                  icon={<div className="w-2.5 h-2.5 rounded-full bg-brand-400" />}
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="bg-white/5"
-                />
-              </div>
+              <PlaceAutocomplete
+                placeholder="From: City, Address, or Place"
+                icon={<div className="w-2.5 h-2.5 rounded-full bg-brand-400" />}
+                value={from}
+                onChange={setFrom}
+                className="bg-white/5"
+              />
 
               <div className="flex justify-center">
                 <div className="w-px h-4 bg-border/50" />
               </div>
 
-              <div className="relative">
-                <Input
-                  placeholder="To: City, Address, or Place"
-                  icon={<div className="w-2.5 h-2.5 rounded-full bg-teal-400" />}
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="bg-white/5"
-                />
-              </div>
+              <PlaceAutocomplete
+                placeholder="To: City, Address, or Place"
+                icon={<div className="w-2.5 h-2.5 rounded-full bg-teal-400" />}
+                value={to}
+                onChange={setTo}
+                className="bg-white/5"
+              />
             </div>
 
             {/* Options */}

@@ -10,12 +10,34 @@ export async function generateItineraryWithGroq(params: {
   budget: number;
   interests: string[];
   travelStyle: string;
+  attractionsPerDay: number;
+  radiusMiles: number;
+  origin?: string;
+  travelMode?: 'car' | 'flight';
 }): Promise<string> {
+  const radiusContext =
+    params.radiusMiles <= 10
+      ? "city centre only — walkable attractions within the downtown core"
+      : params.radiusMiles <= 30
+      ? "city and suburbs — include nearby neighbourhoods and suburban highlights"
+      : params.radiusMiles <= 60
+      ? "regional area — include attractions up to a short drive away in surrounding towns"
+      : "wide region — venture well beyond the city; prioritise the most popular and highly-rated attractions across the entire area even if they require day trips";
+
+  const isCarTrip = params.travelMode === 'car';
+  const hasOrigin = isCarTrip && params.origin;
+
   const prompt = `You are WanderPilot AI, an expert travel planner. Create a detailed ${params.days}-day itinerary for ${params.destination}.
 
 Budget: $${params.budget} total
 Interests: ${params.interests.join(", ")}
 Travel Style: ${params.travelStyle}
+Activities per day: exactly ${params.attractionsPerDay} activities (${params.attractionsPerDay <= 2 ? "light pace, relaxed" : params.attractionsPerDay <= 4 ? "standard pace" : "packed schedule, maximum sightseeing"})
+Attraction radius: ${params.radiusMiles} miles — ${radiusContext}. When radius is larger, replace less-popular nearby attractions with higher-rated ones from farther away.
+${hasOrigin ? `
+Travel Mode: DRIVING — Road Trip from "${params.origin}" to "${params.destination}"
+DAY 1 IS A TRAVEL/DRIVE DAY: Include ${Math.min(params.attractionsPerDay, 4)} interesting en-route stops along the driving route from ${params.origin} to ${params.destination}. Prefix each stop activity "name" with "🚗 En Route: " (e.g., "🚗 En Route: Scenic Overlook"). Choose diverse stops: scenic viewpoints, small towns, state parks, roadside diners, historic landmarks, and roadside attractions along the highway corridor. The last activity of Day 1 should be named "Arrive & Check In at ${params.destination}" with cost 0.
+Days 2 and beyond: Focus entirely on attractions in and around ${params.destination} within the specified radius.` : isCarTrip ? `Travel Mode: DRIVING to ${params.destination} — include driving tips in transportTips fields.` : `Travel Mode: FLIGHT to ${params.destination}`}
 
 Generate a comprehensive JSON itinerary with this exact structure:
 {

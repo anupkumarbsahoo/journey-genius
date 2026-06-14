@@ -36,6 +36,7 @@ export function MapView({
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const suppressViewSync = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
@@ -73,9 +74,9 @@ export function MapView({
     };
   }, []);
 
-  // Sync view state externally
+  // Sync view state externally — skipped while fitBounds is animating
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current || !mapLoaded || suppressViewSync.current) return;
     const center = map.current.getCenter();
     const currentZoom = map.current.getZoom();
     const latDiff = Math.abs(center.lat - viewState.latitude);
@@ -178,7 +179,10 @@ export function MapView({
         (b, coord) => b.extend(coord),
         new maplibregl.LngLatBounds(coords[0], coords[0])
       );
+      // Suppress viewState sync so flyTo doesn't fight fitBounds
+      suppressViewSync.current = true;
       map.current.fitBounds(bounds, { padding: 60, duration: 1500 });
+      setTimeout(() => { suppressViewSync.current = false; }, 2000);
     }
   }, [route, routeColor, mapLoaded]);
 

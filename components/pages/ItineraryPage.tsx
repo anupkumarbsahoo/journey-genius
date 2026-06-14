@@ -20,11 +20,13 @@ import {
   Share2,
   RefreshCw,
   Plane,
+  Car,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PlaceAutocomplete } from "@/components/ui/PlaceAutocomplete";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ItineraryDaySkeleton } from "@/components/ui/Skeleton";
@@ -79,10 +81,11 @@ function ActivityItem({ activity }: { activity: Activity }) {
   );
 }
 
-function DayCard({ day, isExpanded, onToggle }: {
+function DayCard({ day, isExpanded, onToggle, travelMode }: {
   day: ItineraryDay;
   isExpanded: boolean;
   onToggle: () => void;
+  travelMode?: 'car' | 'flight';
 }) {
   const totalActivitiesCost = day.activities.reduce((sum, a) => sum + (a.cost || 0), 0);
 
@@ -196,7 +199,11 @@ function DayCard({ day, isExpanded, onToggle }: {
               {day.transportTips && (
                 <div className="p-5">
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-brand-500/10 border border-brand-500/20">
-                    <Plane className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
+                    {travelMode === 'car' ? (
+                      <Car className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <Plane className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
+                    )}
                     <p className="text-xs text-brand-200/80">{day.transportTips}</p>
                   </div>
                 </div>
@@ -210,9 +217,13 @@ function DayCard({ day, isExpanded, onToggle }: {
 }
 
 export function ItineraryPage() {
+  const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
+  const [travelMode, setTravelMode] = useState<'car' | 'flight'>('flight');
   const [days, setDays] = useState(5);
   const [budget, setBudget] = useState(2000);
+  const [attractionsPerDay, setAttractionsPerDay] = useState(4);
+  const [radiusMiles, setRadiusMiles] = useState(20);
   const [selectedInterests, setSelectedInterests] = useState<string[]>(["Culture & History", "Food & Cuisine"]);
   const [travelStyle, setTravelStyle] = useState("standard");
   const [loading, setLoading] = useState(false);
@@ -257,6 +268,10 @@ export function ItineraryPage() {
           budget,
           interests: selectedInterests,
           travelStyle,
+          attractionsPerDay,
+          radiusMiles,
+          origin: origin.trim() || undefined,
+          travelMode,
         }),
       });
 
@@ -311,18 +326,68 @@ export function ItineraryPage() {
           >
             <Card className="bg-card/50 backdrop-blur-sm sticky top-20">
               <CardContent className="p-6 space-y-6">
+                {/* Origin */}
+                <div>
+                  <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-teal-400" />
+                    Origin
+                    <span className="text-xs font-normal text-muted-foreground ml-1">(optional)</span>
+                  </label>
+                  <PlaceAutocomplete
+                    placeholder="e.g. New York, Chicago..."
+                    value={origin}
+                    onChange={setOrigin}
+                    className="bg-white/5"
+                  />
+                </div>
+
                 {/* Destination */}
                 <div>
                   <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-brand-400" />
                     Destination
                   </label>
-                  <Input
+                  <PlaceAutocomplete
                     placeholder="e.g. Tokyo, Paris, New York..."
                     value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
+                    onChange={setDestination}
                     className="bg-white/5"
                   />
+                </div>
+
+                {/* Mode of Travel */}
+                <div>
+                  <label className="text-sm font-semibold mb-3 block">Mode of Travel</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setTravelMode('car')}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-medium border transition-all ${
+                        travelMode === 'car'
+                          ? "border-brand-500/50 bg-brand-500/15 text-brand-300"
+                          : "border-border/30 bg-white/3 text-muted-foreground hover:border-border"
+                      }`}
+                    >
+                      <Car className="w-4 h-4" />
+                      Car
+                    </button>
+                    <button
+                      onClick={() => setTravelMode('flight')}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-medium border transition-all ${
+                        travelMode === 'flight'
+                          ? "border-brand-500/50 bg-brand-500/15 text-brand-300"
+                          : "border-border/30 bg-white/3 text-muted-foreground hover:border-border"
+                      }`}
+                    >
+                      <Plane className="w-4 h-4" />
+                      Flight
+                    </button>
+                  </div>
+                  {travelMode === 'car' && (
+                    <p className="text-xs text-teal-400 mt-2">
+                      🚗 En-route stops will be included on Day 1
+                      {origin ? ` from ${origin}` : " — add an origin city above for best results"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Duration */}
@@ -363,6 +428,55 @@ export function ItineraryPage() {
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>$200</span>
                     <span>$20,000</span>
+                  </div>
+                </div>
+
+                {/* Attractions per day */}
+                <div>
+                  <label className="text-sm font-semibold mb-3 block flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-pink-400" />
+                    Attractions per day: <span className="text-brand-400">{attractionsPerDay}</span>
+                    <span className="text-xs text-muted-foreground font-normal ml-1">
+                      {attractionsPerDay <= 2 ? "(Light)" : attractionsPerDay <= 4 ? "(Standard)" : "(Packed)"}
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min={2}
+                    max={6}
+                    value={attractionsPerDay}
+                    onChange={(e) => setAttractionsPerDay(Number(e.target.value))}
+                    className="w-full accent-brand-500"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>Light (2)</span>
+                    <span>Standard (4)</span>
+                    <span>Packed (6)</span>
+                  </div>
+                </div>
+
+                {/* Attraction Radius */}
+                <div>
+                  <label className="text-sm font-semibold mb-3 block flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-teal-400" />
+                    Attraction radius: <span className="text-brand-400">{radiusMiles} mi</span>
+                    <span className="text-xs text-muted-foreground font-normal ml-1">
+                      {radiusMiles <= 10 ? "(City centre)" : radiusMiles <= 30 ? "(City & suburbs)" : radiusMiles <= 60 ? "(Regional)" : "(Wide region)"}
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    step={5}
+                    value={radiusMiles}
+                    onChange={(e) => setRadiusMiles(Number(e.target.value))}
+                    className="w-full accent-teal-500"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>5 mi</span>
+                    <span>50 mi</span>
+                    <span>100 mi</span>
                   </div>
                 </div>
 
@@ -457,6 +571,9 @@ export function ItineraryPage() {
                       <p className="text-muted-foreground text-sm">
                         {itinerary.totalDays}-day itinerary · Est. {formatCurrency(itinerary.estimatedBudget)}
                       </p>
+                      {travelMode === 'car' && origin && (
+                        <p className="text-xs text-brand-400 mt-1">🚗 Road trip from {origin}</p>
+                      )}
                       {itinerary.bestTimeToVisit && (
                         <p className="text-xs text-teal-400 mt-1">📅 {itinerary.bestTimeToVisit}</p>
                       )}
@@ -504,6 +621,7 @@ export function ItineraryPage() {
                     day={day}
                     isExpanded={expandedDays.has(day.day)}
                     onToggle={() => toggleDay(day.day)}
+                    travelMode={travelMode}
                   />
                 ))}
               </motion.div>

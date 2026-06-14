@@ -4,7 +4,7 @@ import { generateItineraryWithGroq } from "@/lib/groq";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { destination, days, budget, interests, travelStyle } = body;
+    const { destination, days, budget, interests, travelStyle, attractionsPerDay, radiusMiles, origin, travelMode } = body;
 
     if (!destination || !days || !budget) {
       return NextResponse.json(
@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
       budget,
       interests: interests || ["Culture", "Food"],
       travelStyle: travelStyle || "standard",
+      attractionsPerDay: attractionsPerDay ?? 4,
+      radiusMiles: radiusMiles ?? 20,
+      origin,
+      travelMode,
     });
 
     // Parse the JSON response
