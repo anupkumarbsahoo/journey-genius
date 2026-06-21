@@ -36,8 +36,28 @@ Activities per day: exactly ${params.attractionsPerDay} activities (${params.att
 Attraction radius: ${params.radiusMiles} miles — ${radiusContext}. When radius is larger, replace less-popular nearby attractions with higher-rated ones from farther away.
 ${hasOrigin ? `
 Travel Mode: DRIVING — Road Trip from "${params.origin}" to "${params.destination}"
-DAY 1 IS A TRAVEL/DRIVE DAY: Include ${Math.min(params.attractionsPerDay, 4)} interesting en-route stops along the driving route from ${params.origin} to ${params.destination}. Prefix each stop activity "name" with "🚗 En Route: " (e.g., "🚗 En Route: Scenic Overlook"). Choose diverse stops: scenic viewpoints, small towns, state parks, roadside diners, historic landmarks, and roadside attractions along the highway corridor. The last activity of Day 1 should be named "Arrive & Check In at ${params.destination}" with cost 0.
-Days 2 and beyond: Focus entirely on attractions in and around ${params.destination} within the specified radius.` : isCarTrip ? `Travel Mode: DRIVING to ${params.destination} — include driving tips in transportTips fields.` : `Travel Mode: FLIGHT to ${params.destination}`}
+
+═══ DAY 1 MUST be a DRIVE DAY — NOT a destination sightseeing day ═══
+- "dayType": "drive_there"
+- "theme": "Drive: ${params.origin} → ${params.destination}"
+- activities: Exactly ${Math.min(params.attractionsPerDay, 4)} stops ALONG THE HIGHWAY CORRIDOR between the two cities. Every activity "name" MUST start with "🚗 En Route: " (e.g. "🚗 En Route: Delaware Water Gap Scenic Overlook"). Pick real, well-known en-route stops: rest areas, scenic overlooks, roadside diners, small towns, state parks, historic landmarks that travellers actually pass through on this route. The LAST activity must be "🏁 Arrive & Check In at ${params.destination}" (time: "Evening", cost: 0).
+- meals: Breakfast, lunch, and dinner should all be at real restaurants/diners/cafes ALONG THE DRIVING ROUTE between the two cities — NOT at ${params.destination} yet. Append "(En Route)" to each meal name.
+- hotel: The first night's hotel IN ${params.destination} (checked in upon arrival).
+- transportTips: "Approx. X-hour drive (~Y miles). Take [major highway names]. Fill up at [mid-route city]. Leave early to enjoy stops."
+${params.days >= 3 ? `
+═══ DAYS 2 through ${params.days - 1} — DESTINATION DAYS ═══
+- "dayType": "destination" for each of these days
+- Focus entirely on attractions in and around ${params.destination} within ${params.radiusMiles} miles
+- Normal dining and hotel accommodations in ${params.destination}` : ''}
+${params.days > 1 ? `
+═══ DAY ${params.days} MUST be a RETURN DRIVE DAY — NOT a destination sightseeing day ═══
+- "dayType": "drive_back"
+- "theme": "Return Drive: ${params.destination} → ${params.origin}"
+- activities: Exactly ${Math.min(params.attractionsPerDay, 4)} stops on the return journey. FIRST activity: "🏁 Check Out & Depart ${params.destination}" (time: "Morning", cost: 0). Middle stops prefixed with "🔄 Return: " (e.g., "🔄 Return: Roadside Diner Lunch Stop"). LAST activity: "🏠 Arrive Home at ${params.origin}" (time: "Evening", cost: 0).
+- meals: Breakfast, lunch, and dinner at diners/restaurants ALONG THE RETURN ROUTE — NOT in ${params.destination}. Append "(Return Route)" to each meal name.
+- hotel: {"name": "Home", "stars": 0, "pricePerNight": 0, "description": "No hotel needed — returning home today.", "amenities": []}
+- transportTips: "Return drive ~X hours. [Highway route back]. Consider [alternative scenic route] on the way back."` : ''}
+` : isCarTrip ? `Travel Mode: DRIVING to ${params.destination} — include driving tips in transportTips fields.` : `Travel Mode: FLIGHT to ${params.destination}`}
 
 Generate a comprehensive JSON itinerary with this exact structure:
 {
@@ -51,6 +71,7 @@ Generate a comprehensive JSON itinerary with this exact structure:
     {
       "day": number,
       "date": "Day 1",
+      "dayType": "drive_there | destination | drive_back",
       "theme": "string",
       "meals": {
         "breakfast": {"name": "string", "cuisine": "string", "priceRange": "string", "description": "string"},

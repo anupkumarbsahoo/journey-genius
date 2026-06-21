@@ -13,6 +13,7 @@ import {
   Utensils,
   Moon,
   Hotel,
+  Home,
   Clock,
   ChevronDown,
   ChevronUp,
@@ -81,12 +82,18 @@ function ActivityItem({ activity }: { activity: Activity }) {
   );
 }
 
-function DayCard({ day, isExpanded, onToggle, travelMode }: {
+function DayCard({ day, isExpanded, onToggle, travelMode, origin, destinationCity }: {
   day: ItineraryDay;
   isExpanded: boolean;
   onToggle: () => void;
   travelMode?: 'car' | 'flight';
+  origin?: string;
+  destinationCity?: string;
 }) {
+  const isDriveThere = day.dayType === 'drive_there' || day.activities.some(a => a.name.includes('🚗 En Route:'));
+  const isDriveBack = day.dayType === 'drive_back' || day.activities.some(a => a.name.includes('🔄 Return:'));
+  const isDriveDay = isDriveThere || isDriveBack;
+  const isReturningHome = isDriveBack && day.hotel?.pricePerNight === 0;
   const totalActivitiesCost = day.activities.reduce((sum, a) => sum + (a.cost || 0), 0);
 
   return (
@@ -128,10 +135,29 @@ function DayCard({ day, isExpanded, onToggle, travelMode }: {
             className="overflow-hidden"
           >
             <div className="border-t border-border/30">
+              {/* Drive day route banner */}
+              {isDriveDay && (
+                <div className="mx-5 mt-5 p-3 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center gap-3">
+                  <Car className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-teal-300">
+                      {isDriveThere
+                        ? `Road Trip: ${origin || 'Origin'} → ${destinationCity || 'Destination'}`
+                        : `Return Drive: ${destinationCity || 'Destination'} → ${origin || 'Home'}`}
+                    </p>
+                    <p className="text-xs text-teal-400/70 mt-0.5">
+                      {isDriveThere
+                        ? 'Meals and stops are along the driving route — not at the destination yet.'
+                        : 'Meals and stops are along the return route home.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Meals */}
               <div className="p-5 border-b border-border/20">
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                  Dining Recommendations
+                  {isDriveDay ? 'Meals Along the Route' : 'Dining Recommendations'}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
@@ -155,7 +181,7 @@ function DayCard({ day, isExpanded, onToggle, travelMode }: {
               {/* Activities */}
               <div className="p-5 border-b border-border/20">
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Day Schedule
+                  {isDriveDay ? 'Route & Stops' : 'Day Schedule'}
                 </h3>
                 <div className="space-y-1">
                   {day.activities.map((activity, i) => (
@@ -169,30 +195,42 @@ function DayCard({ day, isExpanded, onToggle, travelMode }: {
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   Accommodation
                 </h3>
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-white/3 border border-border/20">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center flex-shrink-0">
-                    <Hotel className="w-6 h-6 text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold">{day.hotel.name}</h4>
-                      <div className="text-amber-400 text-xs">
-                        {"★".repeat(day.hotel.stars)}
-                      </div>
+                {isReturningHome ? (
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                    <div className="w-12 h-12 rounded-xl bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                      <Home className="w-6 h-6 text-green-400" />
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2">{day.hotel.description}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-1 flex-wrap">
-                        {day.hotel.amenities.slice(0, 3).map((a) => (
-                          <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
-                        ))}
-                      </div>
-                      <span className="font-bold text-teal-400 text-sm">
-                        ${day.hotel.pricePerNight}/night
-                      </span>
+                    <div>
+                      <h4 className="font-semibold text-green-300">Returning Home</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">No accommodation needed — you're back home today!</p>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-white/3 border border-border/20">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                      <Hotel className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold">{day.hotel.name}</h4>
+                        <div className="text-amber-400 text-xs">
+                          {"★".repeat(day.hotel.stars)}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{day.hotel.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-1 flex-wrap">
+                          {day.hotel.amenities.slice(0, 3).map((a) => (
+                            <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
+                          ))}
+                        </div>
+                        <span className="font-bold text-teal-400 text-sm">
+                          ${day.hotel.pricePerNight}/night
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Transport tips */}
@@ -384,7 +422,7 @@ export function ItineraryPage() {
                   </div>
                   {travelMode === 'car' && (
                     <p className="text-xs text-teal-400 mt-2">
-                      🚗 En-route stops will be included on Day 1
+                      🚗 Day 1 = drive to destination · Last day = drive back home
                       {origin ? ` from ${origin}` : " — add an origin city above for best results"}
                     </p>
                   )}
@@ -622,6 +660,8 @@ export function ItineraryPage() {
                     isExpanded={expandedDays.has(day.day)}
                     onToggle={() => toggleDay(day.day)}
                     travelMode={travelMode}
+                    origin={origin || undefined}
+                    destinationCity={destination || undefined}
                   />
                 ))}
               </motion.div>

@@ -45,6 +45,7 @@ export interface ItineraryDay {
   day: number;
   date: string;
   theme: string;
+  dayType?: 'drive_there' | 'destination' | 'drive_back';
   meals: {
     breakfast: MealSuggestion;
     lunch: MealSuggestion;
